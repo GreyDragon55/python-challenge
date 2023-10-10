@@ -1,55 +1,61 @@
-import csv
-import os
+import csv 
 
+budget_csv = r"/Users/shakhnoza/Documents/GitHub/python-challenge/PyBank/Resources/budget_data.csv"
 
-csvpath = os.path.join('Resources', 'budget_data.csv')
+with open(budget_csv, 'r') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ",")
+    next(reader)
 
-with open(csvpath, encoding= 'utf') as csvfile:
-#Initialising reader to read csvfile
-    csvreader = csv.reader(csvfile, delimiter = ',')
-   #Skipping the first row (header)
-    next(csvreader)
-   #Excluding first month from for loop
-    budget_data = [next(csvreader)]
-    #Initialising net amount with first profit or loss 
-    net_amount = int(budget_data[0][1])
-    changes = []
-    #Will be used to calculate change inside for loop
-    previous_profit_loss = net_amount
+    count = 0 
+    total = 0
+    prev_revenue = 0 
+    revenue_change_list = []
+    month_of_change = []
+    total_change = 0 
+    
+    for row in reader:
+        count = count + 1
+        current_revenue = int(row[1])
+        total = total + current_revenue
+        
+        if prev_revenue != 0 :
+            revenue_change = current_revenue - prev_revenue
+            revenue_change_list.append(revenue_change)
+            month_of_change.append(row[0])
+            total_change = total_change + revenue_change
+            
+        prev_revenue = current_revenue
+    
+    avg_change = total_change / (count - 1)
 
-    for line in csvreader:
-        # Total months included in dataset
-        budget_data.append(line)
-       
-        # Net total amount of Profit/Losses over entire period
-        net_amount = net_amount + int(line[1])
-       
-       # Changes in profit/loss over entire period
-        changes.append(int(line[1])-previous_profit_loss)
-
-        # Average changes of profit/loss
-        previous_profit_loss = int(line[1])
-
-
-# Greatest increase in profit (date and amount)
-index_max_change = changes.index(max(changes))
-# print(budget_data[index_max_change+1])
-
-#Greatest decrease in profit (date and amount)
-index_max_loss = changes.index(min(changes))
-# print(budget_data[index_max_loss+1])
-
-# Export result to text file and print analysis in terminal
-output = f'''  Financial Analysis
-  ----------------------------
-  Total Months: {len(budget_data)}
-  Total: ${net_amount}
-  Average Change: ${round(sum(changes)/(len(changes)),2)}
-  Greatest Increase in Profits: {budget_data[index_max_change+1][0]} (${max(changes)})
-  Greatest Decrease in Profits: {budget_data[index_max_loss+1][0]} (${min(changes)})
+    
+    print(f'Total number of months: {count}')
+    print(f'Total profit/loss: ${total}')
+    print(f'Total change: {total_change}')
+    print(f'Average change: ${avg_change:.2f}')
+    
+    max_increase = max(revenue_change_list)
+    max_increase_month = month_of_change[revenue_change_list.index(max_increase)]
   
-  '''
+    print(f"Greatest Increase in Profits: {max_increase_month} (${max_increase})")
+  
+    max_decrease = min(revenue_change_list)
+    max_decrease_month = month_of_change[revenue_change_list.index(max_decrease)]
+
+    print(f"Greatest Decrease in Profits: {max_decrease_month} (${max_decrease})") 
+
+output = (
+    
+    f"\nFinancial Analysis\n"
+    f"----------------------------\n"
+    f"Total Months: {count}\n"
+    f"Total: ${total}\n"
+    f"Average Change: ${avg_change:.2f}\n"
+    f"Greatest Increase in Profits: {max_increase_month} (${max_increase})\n"
+    f"Greatest Decrease in Profits: {max_decrease_month} (${max_decrease})\n")
+
 print(output)
-csvpath = os.path.join('Analysis', 'Financial_Analysis.txt')
-with open(csvpath,'w') as textfile:
-    textfile.write(output)
+
+output_file = "./PyBank/analysis/result.txt"
+with open(output_file, "w") as f:
+    f.write(output)
