@@ -1,58 +1,47 @@
-from operator import index
-import os
+import pandas as pd 
 
-import csv
-# Path to collect data from the Resources folder
-csvpath = os.path.join('Resources', 'election_data.csv')
-output = '''Election Results
+filepath= "./PyPoll/Resources/election_data.csv"
+df = pd.read_csv(filepath,sep = ",")
+
+total_votes = df['Ballot ID'].count()
+candidates = df['Candidate'].unique()
+
+number_of_votes_per_candidate=df.groupby('Candidate').agg({'Ballot ID' : 'count'})
+percentage_per_candidate = (number_of_votes_per_candidate['Ballot ID'] / total_votes) * 100
+percentage_per_candidate = percentage_per_candidate.sort_values(ascending=False)
+winner = percentage_per_candidate.index[0]
+
+
+# Create a new DataFrame with the results
+results_df = pd.DataFrame({
+    'Candidate': percentage_per_candidate.index,
+    'Percentage of Votes': percentage_per_candidate.values,
+    'Total Votes': number_of_votes_per_candidate['Ballot ID'].values
+})
+
+# Sort the results by percentage of votes in descending order
+results_df = results_df.sort_values('Candidate', ascending=True)
+
+# Add a column with the formatted percentage of votes
+results_df['Percentage of Votes'] = results_df['Percentage of Votes'].map('{:.3f}%'.format)
+
+# Add a header with the total number of votes
+header = f'''
+Election Results
 -------------------------
-Total Votes: '''
-'''369711
- -------------------------
-  Charles Casper Stockham: 23.049% (85213)
-  Diana DeGette: 73.812% (272892)
-  Raymon Anthony Doane: 3.139% (11606)
- -------------------------
-  Winner: Diana DeGette
-  -------------------------
-  '''
- 
-with open(csvpath, encoding= 'utf') as csvfile:
-     #Initialising reader to read csvfile                   
-    csvreader = csv.reader(csvfile, delimiter = ',')
-    
-    #Skipping the first row (header)
-    next(csvreader)
-    
-    total_votes = []
-    candidates_votes = ()
+Total Votes: {total_votes}
+-------------------------
+'''
 
-# The total number of votes 
+# Add a footer with the winner
+footer = f'''
+-------------------------
+Winner: {winner}
+-------------------------
+'''
 
-    for line in csvreader:
-        total_votes.append(line[2])
-total_count = len(total_votes)
-output = output + str(total_count) + "\n" + "-------------------------" + "\n"
-candidates = list(set(total_votes))
-votes_per_candidate = []
-percentage = []
-
-# Votes per candidate
-# List of candidates
-for candidate in candidates:
-    votes_per_candidate.append(total_votes.count(candidate))
-
-# Percentage of votes each candidate got
-for i in range (len(candidates)):
-    percentage = votes_per_candidate[i]/total_count*100
-    output = output + f'{candidates[i]}: {round(percentage,3)}% ({votes_per_candidate[i]}) \n'
-# The winner of the vote
-index_of_winner = votes_per_candidate.index(max(votes_per_candidate))
-output = output + f"-------------------------\nWinner: {candidates[index_of_winner]}\n-------------------------"   
-
-
-# Export result to text file and print on terminal
-print(output)
-csvpath = os.path.join('Analysis', 'Polling_Analysis.txt')
-with open(csvpath,'w') as textfile:
-    textfile.write(output)
+# Write the results to a CSV file
+with open('./PyPoll/analysis/election_results.csv', 'w') as f:
+    f.write(header)
+    results_df.to_csv(f, index=False)
+    f.write(footer)
